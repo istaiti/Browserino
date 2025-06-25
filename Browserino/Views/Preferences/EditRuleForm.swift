@@ -67,6 +67,13 @@ struct RuleForm: View {
     @State private var regex: String = ""
     @State private var testUrls: String = "https://github.com/AlexStrNik/Browserino\nhttps://x.com/alexstrnik"
     @State private var url: URL?
+    @State private var selectedProfile: ChromeProfile?
+    @State private var chromeProfiles: [ChromeProfile] = []
+
+    private var isChrome: Bool {
+      guard let bundle = url.map({ Bundle(url: $0)! }) else { return false }
+      return bundle.bundleIdentifier == "com.google.Chrome"
+    }
     
     private var compiledRegex: Regex<AnyRegexOutput>? {
         return try? Regex(regex).ignoresCase()
@@ -127,6 +134,12 @@ struct RuleForm: View {
                 ) {
                     if case .success(let url) = $0 {
                         self.url = url
+                        // Reset selected profile when changing app
+                        self.selectedProfile = nil
+                        // Load Chrome profiles if Chrome is selected
+                        if isChrome {
+                            chromeProfiles = BrowserUtil.getChromeProfiles()
+                        }
                     }
                 }
                 
@@ -135,6 +148,20 @@ struct RuleForm: View {
                         .padding(.horizontal, 5)
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                }
+            }
+            
+            if isChrome && !chromeProfiles.isEmpty {
+                LabeledContent("Chrome Profile:") {
+                    Picker("Profile", selection: $selectedProfile) {
+                        Text("Default")
+                            .tag(nil as ChromeProfile?)
+                        ForEach(chromeProfiles) { profile in
+                            Text(profile.name)
+                                .tag(profile as ChromeProfile?)
+                        }
+                    }
+                    .frame(width: 200)
                 }
             }
             
@@ -177,6 +204,10 @@ struct RuleForm: View {
         .onAppear {
             regex = rule?.regex ?? ""
             url = rule?.app
+            selectedProfile = rule?.chromeProfile
+            if isChrome {
+                chromeProfiles = BrowserUtil.getChromeProfiles()
+            }
         }
     }
 }

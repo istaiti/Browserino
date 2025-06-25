@@ -120,10 +120,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     
     func application(_ application: NSApplication, open urls: [URL]) {
         var processedUrls = urls
-        
+
+        if UserDefaults.standard.object(forKey: "browsers") == nil {
+            if let encodedBrowsers = try? JSONEncoder().encode(BrowserUtil.loadBrowsers()) {
+                UserDefaults.standard.set(encodedBrowsers, forKey: "browsers")
+            }
+        }
+
         if urls.count == 1 {
             let url = urls.first!
-            
+
             if url.scheme == "browserino" && url.host == "open" {
                 if let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                    let queryItems = components.queryItems,
@@ -136,17 +142,40 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
                     return
                 }
             }
-            
+
             let urlString = processedUrls.first!.absoluteString
 
             for rule in rules {
                 let regex = try? Regex(rule.regex).ignoresCase()
-                
+
                 if let regex, urlString.firstMatch(of: regex) != nil {
+                    if let bundle = Bundle(url: rule.app),
+                       bundle.bundleIdentifier == "com.google.Chrome",
+                       let chromeProfile = rule.chromeProfile,
+                       let browsersData = UserDefaults.standard.object(forKey: "browsers") as? Data,
+                       let browserItems = try? JSONDecoder().decode([BrowserItem].self, from: browsersData),
+                       let matchingBrowser = browserItems.first(where: { browser in
+                           guard let browserBundle = Bundle(url: browser.url),
+                                 browserBundle.bundleIdentifier == "com.google.Chrome",
+                                 let browserProfile = browser.profile else {
+                               return false
+                           }
+                           return browserProfile.id == chromeProfile.id
+                       }) {
+                        BrowserUtil.openURL(
+                            processedUrls,
+                            app: matchingBrowser.url,
+                            isIncognito: false,
+                            chromeProfile: matchingBrowser.profile
+                        )
+                        return
+                    }
+
                     BrowserUtil.openURL(
                         processedUrls,
                         app: rule.app,
-                        isIncognito: false
+                        isIncognito: false,
+                        chromeProfile: rule.chromeProfile
                     )
                     return
                 }
@@ -176,6 +205,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         
         NSApplication.shared.activate(ignoringOtherApps: true)
         selectorWindow!.deactivateDelay()
+        
+        // Ensure browsers are loaded before showing the prompt
+        if UserDefaults.standard.object(forKey: "browsers") == nil {
+            if let encodedBrowsers = try? JSONEncoder().encode(BrowserUtil.loadBrowsers()) {
+                UserDefaults.standard.set(encodedBrowsers, forKey: "browsers")
+            }
+        }
         
         selectorWindow!.contentView = NSHostingView(
             rootView: PromptView(
