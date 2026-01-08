@@ -16,6 +16,7 @@ struct PromptView: View {
 
     @AppStorage("copy_closeAfterCopy") private var closeAfterCopy: Bool = false
     @AppStorage("copy_alternativeShortcut") private var alternativeShortcut: Bool = false
+    @AppStorage("apps_atTop") private var appsAtTop: Bool = true
 
     let urls: [URL]
 
@@ -66,6 +67,29 @@ struct PromptView: View {
             ScrollViewReader { scrollViewProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 2) {
+                        if !appsForUrls.isEmpty && appsAtTop {
+                            ForEach(Array(appsForUrls.enumerated()), id: \.offset) { index, app in
+                                if let bundle = Bundle(url: app.app) {
+                                    PromptItem(
+                                        browser: app.app,
+                                        urls: urls,
+                                        bundle: bundle,
+                                        shortcut: shortcuts[bundle.bundleIdentifier!]
+                                    ) {
+                                        openUrlsInApp(app: app)
+                                    }
+                                    .id(index)
+                                    .buttonStyle(
+                                        SelectButtonStyle(
+                                            selected: selected == index
+                                        )
+                                    )
+                                }
+                            }
+                            
+                            Divider()
+                        }
+                        
                         ForEach(Array(visibleBrowsers.enumerated()), id: \.offset) {
                             index, browser in
                             if let bundle = Bundle(url: browser) {
@@ -81,16 +105,16 @@ struct PromptView: View {
                                         isIncognito: NSEvent.modifierFlags.contains(.shift)
                                     )
                                 }
-                                .id(index)
+                                .id(index + (appsAtTop ? appsForUrls.count : 0))
                                 .buttonStyle(
                                     SelectButtonStyle(
-                                        selected: selected == index
+                                        selected: selected == index + (appsAtTop ? appsForUrls.count : 0)
                                     )
                                 )
                             }
                         }
 
-                        if !appsForUrls.isEmpty {
+                        if !appsForUrls.isEmpty && !appsAtTop {
                             Divider()
 
                             ForEach(Array(appsForUrls.enumerated()), id: \.offset) { index, app in
@@ -128,28 +152,52 @@ struct PromptView: View {
                 }
                 .background {
                     Button(action: {
-                        if selected < visibleBrowsers.count {
-                            BrowserUtil.openURL(
-                                urls,
-                                app: visibleBrowsers[selected],
-                                isIncognito: false
-                            )
+                        if appsAtTop {
+                            if selected < appsForUrls.count {
+                                openUrlsInApp(app: appsForUrls[selected])
+                            } else {
+                                BrowserUtil.openURL(
+                                    urls,
+                                    app: visibleBrowsers[selected - appsForUrls.count],
+                                    isIncognito: false
+                                )
+                            }
                         } else {
-                            openUrlsInApp(app: appsForUrls[selected - visibleBrowsers.count])
+                            if selected < visibleBrowsers.count {
+                                BrowserUtil.openURL(
+                                    urls,
+                                    app: visibleBrowsers[selected],
+                                    isIncognito: false
+                                )
+                            } else {
+                                openUrlsInApp(app: appsForUrls[selected - visibleBrowsers.count])
+                            }
                         }
                     }) {}
                     .opacity(0)
                     .keyboardShortcut(.defaultAction)
 
                     Button(action: {
-                        if selected < visibleBrowsers.count {
-                            BrowserUtil.openURL(
-                                urls,
-                                app: visibleBrowsers[selected],
-                                isIncognito: true
-                            )
+                        if appsAtTop {
+                            if selected < appsForUrls.count {
+                                openUrlsInApp(app: appsForUrls[selected])
+                            } else {
+                                BrowserUtil.openURL(
+                                    urls,
+                                    app: visibleBrowsers[selected - appsForUrls.count],
+                                    isIncognito: true
+                                )
+                            }
                         } else {
-                            openUrlsInApp(app: appsForUrls[selected - visibleBrowsers.count])
+                            if selected < visibleBrowsers.count {
+                                BrowserUtil.openURL(
+                                    urls,
+                                    app: visibleBrowsers[selected],
+                                    isIncognito: true
+                                )
+                            } else {
+                                openUrlsInApp(app: appsForUrls[selected - visibleBrowsers.count])
+                            }
                         }
                     }) {}
                     .opacity(0)

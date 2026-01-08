@@ -40,6 +40,7 @@ struct GeneralTab: View {
     @AppStorage("copy_closeAfterCopy") private var closeAfterCopy: Bool = false
     @AppStorage("copy_alternativeShortcut") private var alternativeShortcut: Bool = false
     @AppStorage("showInMenuBar") private var showInMenuBar: Bool = true
+    @AppStorage("apps_atTop") private var appsAtTop: Bool = true
     
     func defaultBrowser() -> String? {
         guard let browserUrl = NSWorkspace.shared.urlForApplication(toOpen: URL(string: "https:")!) else {
@@ -160,6 +161,20 @@ struct GeneralTab: View {
                     
                     Toggle(isOn: $alternativeShortcut) {
                         Text("Use Command+C instead of Command+Option+C")
+                            .font(.callout)
+                            .opacity(0.5)
+                    }
+                }
+            }
+            
+            HStack(alignment: .top, spacing: 32) {
+                Text("Appearance")
+                    .font(.headline)
+                    .frame(width: 200, alignment: .trailing)
+                
+                VStack(alignment: .leading) {
+                    Toggle(isOn: $appsAtTop) {
+                        Text("Show apps before browsers")
                             .font(.callout)
                             .opacity(0.5)
                     }
