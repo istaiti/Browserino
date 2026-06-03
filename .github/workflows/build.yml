@@ -37,3 +37,21 @@ jobs:
         with:
           name: Browserino
           path: Browserino.zip
+
+      - name: Run instructions
+        if: always()
+        run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ## ⚠️ Running the downloaded artifact
+
+          The build is **unsigned**, so macOS Gatekeeper will block it with
+          *"Apple could not verify 'Browserino' is free of malware"*.
+
+          After unzipping, strip the quarantine attribute:
+
+          ```sh
+          xattr -dr com.apple.quarantine /path/to/Browserino.app
+          ```
+
+          Then double-click to launch.
+          EOF
