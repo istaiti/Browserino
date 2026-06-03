@@ -13,7 +13,9 @@ extension View {
         if #available(macOS 26.0, *) {
             self
                 .scrollEdgeEffectStyle(.soft, for: .all)
+                #if !CI_BUILD
                 .scrollEdgeEffectDisabled(true, for: .all)
+                #endif
         } else {
             self
         }
