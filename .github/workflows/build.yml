@@ -49,11 +49,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete latest --yes --cleanup-tag || true
+          # Not --prerelease: GitHub's /releases/latest pointer skips prereleases,
+          # which would 404 the stable download URL the Homebrew cask relies on.
           gh release create latest Browserino.zip \
             --target "$GITHUB_SHA" \
             --title "Latest build (${GITHUB_SHA::7})" \
-            --prerelease \
-            --notes 'Unsigned build of `main`. After unzipping, run `xattr -dr com.apple.quarantine /path/to/Browserino.app` before launching.'
+            --notes 'Unsigned build of `main`. Install with `brew`, or after unzipping run `xattr -dr com.apple.quarantine /path/to/Browserino.app` before launching.'
 
       - name: Run instructions
         if: always()

@@ -8,15 +8,11 @@ Inspired by great [Browserosaurus](https://github.com/will-stone/browserosaurus)
 
 # Installation
 
-```bash
-brew tap istaiti/browserino https://github.com/istaiti/Browserino
-brew install --cask --no-quarantine browserino
-```
+Download the latest build from the [releases page](https://github.com/istaiti/Browserino/releases/latest),
+unzip it, and drag `Browserino.app` into `/Applications`.
 
-Or download Browserino from the [releases page](https://github.com/istaiti/Browserino/releases).
-
-The build is unsigned, hence `--no-quarantine`. Without it macOS Gatekeeper blocks the
-app, and you have to strip the quarantine flag by hand:
+The build is unsigned, so macOS Gatekeeper will refuse to open it. Strip the quarantine
+flag once, and it launches normally from then on:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Browserino.app
